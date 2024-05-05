@@ -1,0 +1,21 @@
+# Go
+*.exe
+*.o
+*.test
+*.cover
+*.prof
+tmp/
+
+# Dependency directories
+vendor/
+go.sum
+go.mod
+
+# Confi
+.env
+
+# Code
+*.pb.go
+
+# Dev
+.air.toml
