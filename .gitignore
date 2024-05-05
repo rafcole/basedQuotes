@@ -16,6 +16,8 @@ go.mod
 
 # Code
 *.pb.go
+cryptosnapshot
 
 # Dev
 .air.toml
+.DS_Store
