@@ -4,7 +4,6 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -24,15 +23,7 @@ var rootCmd = &cobra.Command{
 	Args: cobra.MinimumNArgs(2),
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
-	Run: func(cmd *cobra.Command, args []string) {
-
-		var venue = args[0]
-		var pair = args[1]
-
-		fmt.Println("Venue: " + venue)
-		fmt.Println("Pair: " + pair)
-
-	},
+	Run: takeSnapShot,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
