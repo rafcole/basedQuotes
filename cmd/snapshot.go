@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"cryptoSnapShot/adapters"
+	"cryptoSnapShot/adapters/sfox"
 	"fmt"
 	"os"
 	"time"
@@ -13,14 +14,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
-
-// func assignVenue(str string) {
-// 	switch str {
-// 	case "sfox":
-// 		// validation here?
-// 		return SFOX
-// 	}
-// }
 
 func takeSnapShot(cmd *cobra.Command, args []string) {
 	const duration int = 60
@@ -39,7 +32,7 @@ func takeSnapShot(cmd *cobra.Command, args []string) {
 		Duration:   60,
 	}
 
-	var venue = adapters.AdapterFactory(query)
+	var venue = AdapterFactory(query)
 
 	// TODO validate venue
 	fmt.Println("===> Status: Validating venue")
@@ -48,51 +41,26 @@ func takeSnapShot(cmd *cobra.Command, args []string) {
 
 	// TODO Send request
 	fmt.Printf("===> Status: Requesting %s OHLCV from %s at %d Unix\n", query.Pair, query.Venue, query.Time_stamp)
-	var data = venue.FetchOHLCV(query)
 
-	var formatted = venue.FormatOHLCV(data)
-	fmt.Println("===> formatted : ", formatted)
+	data := venue.FetchOHLCV(query)
+	fmt.Println("data in takeSnapshot: ", data)
 
-	// var url = fmt.Sprintf("https://chartdata.sfox.com/candlesticks?endTime=%d&pair=%s&period=60&startTime=%d", unix_timestamp, pair, startTime)
+	// venue.FormatOHLCV(data)
 
-	// // var url = "https://chartdata.sfox.com/candlesticks?endTime=1665165809&pair=btcusd&period=86400&startTime=1657217002"
-
-	// resp, err := http.Get(url)
-	// if err != nil {
-	// 	log.Fatalln(err)
-	// }
-
-	// responseBody, err := io.ReadAll(resp.Body)
-	// if err != nil {
-	// 	log.Fatalln(err)
-	// }
-	// defer resp.Body.Close()
-
-	// fmt.Printf("\tResponse from %s: \n%s\n", venue, string(responseBody))
-
-	connectToServer()
+	// connectToServer()
 
 }
 
-// type query struct {
-// 	time int
-// 	// requestID string
-// 	venue string
-// 	pair  string
-// }
-
-// func (q *adapters.Query) authenticate() (int, error) {
-// 	switch q.Venue {
-// 	case "sfox":
-// 		// go into sfox adapter and get authenticator
-// 		adapters.Authenticate()
-
-// 	default:
-// 		return -1, errors.New("No matching venue found for authentication")
-// 	}
-
-// 	return 0, nil
-// }
+func AdapterFactory(q adapters.Query) adapters.Venue {
+	switch q.Venue {
+	case "sfox":
+		// validation here?
+		fmt.Println("Found sfox in AdapterFactory")
+		return sfox.SFOX{Query: q}
+	default:
+		return nil
+	}
+}
 
 type Snapshot struct {
 	Time   int
