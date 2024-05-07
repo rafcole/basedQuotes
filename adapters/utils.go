@@ -8,15 +8,16 @@ import (
 type Venue interface {
 	Authenticate() (int, error)
 	ValidatePair(string) (bool, error)
-	FetchOHLCV(Query) io.ReadCloser // Timestamp within method or at time of request?
-	FormatOHLCV(io.ReadCloser) any  // Last touch point
+	FetchOHLCV(Query) OHLCVData          // Timestamp within method or at time of request?
+	FormatOHLCV(io.ReadCloser) OHLCVData // Last touch point
 }
 
 type Query struct {
-	Time_stamp int
-	Venue      string
-	Pair       string
-	Duration   int
+	Time_stamp    int
+	Venue         string
+	Currency_Pair string
+	Duration      int
+	Request_ID    string
 }
 
 func (q Query) StartTime() int {
