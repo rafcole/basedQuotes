@@ -8,28 +8,30 @@ import (
 	"os"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func takeSnapShot(cmd *cobra.Command, args []string) {
+	// default duration appears to be 60s
 	const duration int = 60
-	var unix_timestamp = int(time.Now().Unix())
+	// unix_timestamp := int(time.Now().Unix())
 
-	var venue_str string = args[0]
-	var pair string = args[1]
+	venue_str := args[0]
+	pair := args[1]
 
-	fmt.Println("Venue: " + venue_str)
-	fmt.Println("Pair: " + pair)
+	// fmt.Println("Venue: " + venue_str)
+	// fmt.Println("Pair: " + pair)
 
 	var query = adapters.Query{
-		Time_stamp: unix_timestamp,
-		Venue:      venue_str,
-		Pair:       pair,
-		Duration:   60,
+		Time_stamp:    int(time.Now().Unix()),
+		Venue:         venue_str,
+		Currency_Pair: pair,
+		Duration:      duration,
+		Request_ID:    uuid.NewString(),
 	}
 
 	var venue = AdapterFactory(query)
@@ -40,15 +42,16 @@ func takeSnapShot(cmd *cobra.Command, args []string) {
 	fmt.Println("===> Status: Validating crypto pair")
 
 	// TODO Send request
-	fmt.Printf("===> Status: Requesting %s OHLCV from %s at %d Unix\n", query.Pair, query.Venue, query.Time_stamp)
+	fmt.Printf("===> Status: Requesting %s OHLCV from %s at %d Unix\n", query.Currency_Pair, query.Venue, query.Time_stamp)
 
 	data := venue.FetchOHLCV(query)
 	fmt.Println("data in takeSnapshot: ", data)
 
 	// venue.FormatOHLCV(data)
 
-	// connectToServer()
+	snapshot := GenerateSnapshot(query, data)
 
+	connectToServer(snapshot)
 }
 
 func AdapterFactory(q adapters.Query) adapters.Venue {
@@ -62,19 +65,27 @@ func AdapterFactory(q adapters.Query) adapters.Venue {
 	}
 }
 
+func GenerateSnapshot(q adapters.Query, d adapters.OHLCVData) Snapshot {
+	return Snapshot{
+		Request_ID:        q.Request_ID,
+		Request_Timestamp: q.Time_stamp,
+		Venue_Name:        q.Venue,
+		Currency_Pair:     q.Currency_Pair,
+		Market_Data:       d,
+	}
+}
+
 type Snapshot struct {
-	Time   int
-	Open   float64
-	High   float64
-	Close  float64
-	Volume float64
-	Venue  string
-	Pair   string
+	Request_ID        string
+	Request_Timestamp int
+	Venue_Name        string
+	Currency_Pair     string
+	Market_Data       adapters.OHLCVData
 	// RequestID
 	// Status
 }
 
-func connectToServer() {
+func connectToServer(data any) {
 	// Use the SetServerAPIOptions() method to set the version of the Stable API on the client
 	// Seems less than ideal for reducing latency
 	godotenv.Load()
@@ -94,9 +105,18 @@ func connectToServer() {
 			panic(err)
 		}
 	}()
-	// Send a ping to confirm a successful connection
-	if err := client.Database("admin").RunCommand(context.TODO(), bson.D{{"ping", 1}}).Err(); err != nil {
+
+	coll := client.Database("crypto_thp").Collection("ohlcv_shapshots")
+
+	result, err := coll.InsertOne(context.TODO(), data)
+	if err != nil {
 		panic(err)
 	}
-	fmt.Println("Pinged your deployment. You successfully connected to MongoDB!")
+
+	fmt.Println("result from mdb: ", result)
+	// Send a ping to confirm a successful connection
+	// if err := client.Database("admin").RunCommand(context.TODO(), bson.D{{"ping", 1}}).Err(); err != nil {
+	// 	panic(err)
+	// }
+	// fmt.Println("Pinged your deployment. You successfully connected to MongoDB!")
 }
