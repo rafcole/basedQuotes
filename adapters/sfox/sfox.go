@@ -7,6 +7,9 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
+
+	"github.com/joho/godotenv"
 )
 
 type SFOX struct {
@@ -14,21 +17,71 @@ type SFOX struct {
 }
 
 func (sfox SFOX) Authenticate() (int, error) {
-	fmt.Println("sFOX candlestick API does not require authentication")
+	// sFox API is public, no need to authenticate
+	fmt.Println("===> Status: Authenticating")
 	return 1, nil
 }
 
-func (sfox SFOX) ValidatePair(pairStr string) (bool, error) {
+func (sfox SFOX) ValidatePair() (bool, error) {
 	// avaliable pairs accessible through GET https://api.sfox.com/v1/currency-pairs
-	// ideally we'd have that data pulled into a file ahead of time
-	// for the sake of time I'll support 3x pairs
-	// TODO dict of 3x pairs
-	return pairStr == "btcusd", nil
+	// ideally we'd have that data pulled into a file ahead of time for validation
+
+	formattedPair := sfox.FormattedCurrencyPair()
+
+	req, err := http.NewRequest("GET", "https://api.sfox.com/v1/markets/currency-pairs", nil)
+	if err != nil {
+		fmt.Println("Error creating request:", err)
+	}
+	godotenv.Load()
+	fmt.Println("API key -> ", os.Getenv("SFOX_API_KEY"))
+
+	// Add custom headers to the request
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", os.Getenv("SFOX_API_KEY")))
+
+	fmt.Println(req.Header)
+
+	// Make the HTTP request
+	client := http.DefaultClient
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Error making request:", err)
+	}
+	defer resp.Body.Close()
+
+	// Read the response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error reading response body:", err)
+	}
+
+	// Parse the response body into a map[string]interface{}
+	var data map[string]interface{}
+	err = json.Unmarshal(body, &data)
+	if err != nil {
+		fmt.Println("Error parsing JSON:", err)
+	}
+
+	// Check if the pairStr exists in the response
+	if pair, ok := data[formattedPair]; ok {
+		fmt.Println("Pair found:", pair)
+		return true, nil
+	}
+
+	// If pairStr not found in response
+	fmt.Println("Pair not valid for sFox API:", formattedPair)
+	return false, nil
 }
 
-func (sfox SFOX) FetchOHLCV(q adapters.Query) io.ReadCloser {
-	fmt.Println(q)
-	var url = fmt.Sprintf("https://chartdata.sfox.com/candlesticks?endTime=%d&pair=%s&period=60&startTime=%d", q.Time_stamp, q.Pair, q.StartTime())
+// for sfox the API needs a simple concat of basequote -> "btc/usd" -> "btcusd"
+func (sfox SFOX) FormattedCurrencyPair() string {
+	return sfox.Query.Currency_Base + sfox.Query.Currency_Quote
+}
+
+func (sfox SFOX) FetchOHLCV(q adapters.Query) adapters.OHLCVData {
+	sfox.Authenticate()
+
+	var url = fmt.Sprintf("https://chartdata.sfox.com/candlesticks?endTime=%d&pair=%s&period=60&startTime=%d", sfox.Query.Time_stamp, sfox.FormattedCurrencyPair(), q.StartTime())
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -40,12 +93,12 @@ func (sfox SFOX) FetchOHLCV(q adapters.Query) io.ReadCloser {
 
 	fmt.Println(ohlcv)
 
-	// return ohlcv
-	return nil
+	return ohlcv
 }
 
 // takes slice of candlesticks, returns array of OHLCV structs
-func (sfox SFOX) FormatOHLCV(response io.ReadCloser) any {
+func (sfox SFOX) FormatOHLCV(response io.ReadCloser) adapters.OHLCVData {
+	fmt.Println("===> Response recieved, parsing data")
 	var dataArr []adapters.OHLCVData
 
 	err := json.NewDecoder(response).Decode(&dataArr)
@@ -54,7 +107,7 @@ func (sfox SFOX) FormatOHLCV(response io.ReadCloser) any {
 		log.Fatalln(err)
 	}
 
-	fmt.Println(" ====> FormatOHLCV candlestick: ", dataArr[0])
+	fmt.Println(" ========> FormatOHLCV candlestick: ", dataArr[0])
 
 	// This is a hardcode to extract the only element in the array
 	// In a more sophisticated program it may be necessary to process
@@ -64,36 +117,3 @@ func (sfox SFOX) FormatOHLCV(response io.ReadCloser) any {
 
 	return candlestick
 }
-
-// sFOX returns an array of dictionaries
-// extracts and returns the first dictionary
-// func extractDictFromSlice(byteArr []byte) map[string]interface{} {
-// 	var data []map[string]interface{}
-// 	err := json.Unmarshal(byteArr, &data)
-// 	if err != nil {
-// 		fmt.Println("Error:", err)
-// 		return nil
-// 	}
-
-// 	// Extract the first dictionary from the slice
-// 	if len(data) > 0 {
-
-// 		fmt.Println(" ===> extractDictFromSlice: ", data[0]["close_price"])
-// 		return data[0]
-// 		dictionary := data[0]
-// 		fmt.Println("---- >Dictionary:  ")
-// 		fmt.Println(dictionary)
-
-// 		// Convert the dictionary to JSON
-// 		jsonDict, err := json.Marshal(dictionary)
-// 		if err != nil {
-// 			fmt.Println("Error:", err)
-// 			return nil
-// 		}
-// 		fmt.Println("JSON:")
-// 		fmt.Println(string(jsonDict))
-// 	} else {
-// 		fmt.Println("No data found")
-// 	}
-// 	return nil
-// }
