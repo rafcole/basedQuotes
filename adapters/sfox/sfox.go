@@ -23,6 +23,68 @@ func (sfox SFOX) Authenticate() error {
 	return nil
 }
 
+func (sfox SFOX) FetchOHLCV() (adapters.OHLCVData, error) {
+	sfox.Authenticate()
+
+	var url = fmt.Sprintf("https://chartdata.sfox.com/candlesticks?endTime=%d&pair=%s&period=60&startTime=%d", sfox.Query.Time_stamp, sfox.FormattedCurrencyPair(), sfox.Query.StartTime())
+
+	fmt.Println(url)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return adapters.OHLCVData{}, err
+	}
+
+	defer resp.Body.Close()
+
+	fmt.Println("\n===> API Response status: ", resp.Status)
+	// body, err := io.ReadAll(resp.Body)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// fmt.Println("Body to string: ", string(body))
+
+	ohlcv, err := sfox.FormatOHLCV(resp.Body)
+	if err != nil {
+		log.Fatalln("Could not format OHLCV: ", err)
+	}
+
+	return ohlcv, nil
+}
+
+// takes slice of candlesticks, returns array of OHLCV structs
+func (sfox SFOX) FormatOHLCV(response io.ReadCloser) (adapters.OHLCVData, error) {
+	fmt.Println("===> Response received, parsing data")
+	var dataArr []adapters.OHLCVData
+
+	err := json.NewDecoder(response).Decode(&dataArr)
+	if err != nil {
+		fmt.Println("Error in FormatOHLCV")
+		return adapters.OHLCVData{}, err
+	}
+
+	if len(dataArr) == 0 {
+		return adapters.OHLCVData{}, errors.New("no data available for this period")
+	}
+
+	// This is a hardcode to extract the only element in the array
+	// In a more sophisticated program it may be necessary to process
+	// the response as a stream as detailed as detailed in encoder pkg
+	// docs https://pkg.go.dev/encoding/json@go1.22.2#NewDecoder:~:text=an%20input%20stream.-,Example,-%C2%B6
+	candlestick := dataArr[0]
+
+	fmt.Println(" ========> FormatOHLCV candlestick: ")
+	candlestick.Print()
+
+	return candlestick, nil
+}
+
+// for sfox the API needs a simple concat of basequote -> "btc/usd" -> "btcusd"
+func (sfox SFOX) FormattedCurrencyPair() string {
+	return sfox.Query.Currency_Base + sfox.Query.Currency_Quote
+}
+
 func (sfox SFOX) ValidatePair() error {
 	// avaliable pairs accessible through GET https://api.sfox.com/v1/currency-pairs
 	// ideally we'd have that data pulled into a file ahead of time for validation
@@ -74,67 +136,4 @@ func (sfox SFOX) ValidatePair() error {
 
 	// If pairStr not found in response
 	return errors.New("Pair not valid for sFox API: " + formattedPair)
-}
-
-// for sfox the API needs a simple concat of basequote -> "btc/usd" -> "btcusd"
-func (sfox SFOX) FormattedCurrencyPair() string {
-	return sfox.Query.Currency_Base + sfox.Query.Currency_Quote
-}
-
-func (sfox SFOX) FetchOHLCV() (adapters.OHLCVData, error) {
-	sfox.Authenticate()
-
-	var url = fmt.Sprintf("https://chartdata.sfox.com/candlesticks?endTime=%d&pair=%s&period=60&startTime=%d", sfox.Query.Time_stamp, sfox.FormattedCurrencyPair(), sfox.Query.StartTime())
-
-	fmt.Println(url)
-
-	resp, err := http.Get(url)
-	if err != nil {
-		return adapters.OHLCVData{}, err
-	}
-
-	defer resp.Body.Close()
-
-	fmt.Println("\n===> API Response status: ", resp.Status)
-	// body, err := io.ReadAll(resp.Body)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// fmt.Println("Body to string: ", string(body))
-
-	ohlcv, err := sfox.FormatOHLCV(resp.Body)
-	if err != nil {
-		log.Fatalln("Could not format OHLCV: ", err)
-	}
-
-	fmt.Println(ohlcv)
-
-	return ohlcv, nil
-}
-
-// takes slice of candlesticks, returns array of OHLCV structs
-func (sfox SFOX) FormatOHLCV(response io.ReadCloser) (adapters.OHLCVData, error) {
-	fmt.Println("===> Response recieved, parsing data")
-	var dataArr []adapters.OHLCVData
-
-	err := json.NewDecoder(response).Decode(&dataArr)
-	if err != nil {
-		fmt.Println("Error in FormatOHLCV")
-		return adapters.OHLCVData{}, err
-	}
-
-	fmt.Println(" ========> FormatOHLCV candlestick: ", dataArr)
-
-	if len(dataArr) == 0 {
-		return adapters.OHLCVData{}, errors.New("no data available for this period")
-	}
-
-	// This is a hardcode to extract the only element in the array
-	// In a more sophisticated program it may be necessary to process
-	// the response as a stream as detailed as detailed in encoder pkg
-	// docs https://pkg.go.dev/encoding/json@go1.22.2#NewDecoder:~:text=an%20input%20stream.-,Example,-%C2%B6
-	candlestick := dataArr[0]
-
-	return candlestick, nil
 }
