@@ -6,10 +6,11 @@ import (
 
 // interface
 type Venue interface {
-	Authenticate() (int, error)
-	ValidatePair(string) (bool, error)
-	FetchOHLCV(Query) OHLCVData          // Timestamp within method or at time of request?
-	FormatOHLCV(io.ReadCloser) OHLCVData // Last touch point
+	Authenticate() error
+	ValidatePair() error
+	FetchOHLCV() (OHLCVData, error)               // Timestamp within method or at time of request?
+	FormatOHLCV(io.ReadCloser) (OHLCVData, error) // Last touch point
+	FormattedCurrencyPair() string
 }
 
 type Query struct {
