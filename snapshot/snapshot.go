@@ -41,7 +41,7 @@ func TakeSnapShot(cmd *cobra.Command, args []string) {
 	}
 
 	printStatus("Validating venue")
-	venue, err := AdapterFactory(query)
+	venue, err := AdapterFactory(&query)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -53,7 +53,7 @@ func TakeSnapShot(cmd *cobra.Command, args []string) {
 	}
 
 	printStatus(fmt.Sprintf("Requesting %s OHLCV from %s at %d Unix\n", venue.FormattedCurrencyPair(), query.Venue, query.Time_stamp))
-	data, err := venue.FetchOHLCV(query)
+	data, err := venue.FetchOHLCV()
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -74,7 +74,7 @@ func printStatus(str string) {
 	fmt.Println("\n===> Status: " + str)
 }
 
-func AdapterFactory(q adapters.Query) (adapters.Venue, error) {
+func AdapterFactory(q *adapters.Query) (adapters.Venue, error) {
 	switch q.Venue {
 	case "sfox":
 		return sfox.SFOX{Query: q}, nil
