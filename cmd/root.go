@@ -4,6 +4,7 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	snapshotpkg "cryptoSnapShot/snapshot"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -23,7 +24,7 @@ var rootCmd = &cobra.Command{
 	Args: cobra.MinimumNArgs(2),
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
-	Run: takeSnapShot,
+	Run: snapshotpkg.TakeSnapShot,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
