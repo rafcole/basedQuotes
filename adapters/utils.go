@@ -13,11 +13,12 @@ type Venue interface {
 }
 
 type Query struct {
-	Time_stamp    int
-	Venue         string
-	Currency_Pair string
-	Duration      int
-	Request_ID    string
+	Time_stamp     int
+	Venue          string
+	Currency_Base  string
+	Currency_Quote string
+	Duration       int
+	Request_ID     string
 }
 
 func (q Query) StartTime() int {
