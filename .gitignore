@@ -8,8 +8,8 @@ tmp/
 
 # Dependency directories
 vendor/
-go.sum
-go.mod
+# go.sum
+# go.mod
 
 # Confi
 .env
