@@ -26,6 +26,25 @@ func parseCurrencyPair(pairStr string) (string, string) {
 	return parts[0], parts[1]
 }
 
+func AdapterFactory(q *adapters.Query) (adapters.Venue, error) {
+	switch q.Venue {
+	case "sfox":
+		return sfox.SFOX{Query: q}, nil
+	case "deribit":
+		// return deribit.Deribit{Query: q}
+		log.Fatalln("Deribit implementation incomplete. Only s. Please see ./adapters/_deribit/_deribit.go for function signatures/stubs")
+		return nil, nil
+	case "coinmarketcap":
+		// return coinmarketcap.CMC{Query: q}
+		log.Fatalln("CoinMarketCap implementation incomplete. Please see ./adapters/ for function signatures/stubs of how this would be implemented")
+		return nil, nil
+	default:
+		log.Fatalln("Unsupported vendor")
+
+		return nil, nil
+	}
+}
+
 func TakeSnapShot(cmd *cobra.Command, args []string) {
 	venue_str := args[0]
 	pair := args[1]
@@ -72,25 +91,6 @@ func TakeSnapShot(cmd *cobra.Command, args []string) {
 
 func printStatus(str string) {
 	fmt.Println("\n===> Status: " + str)
-}
-
-func AdapterFactory(q *adapters.Query) (adapters.Venue, error) {
-	switch q.Venue {
-	case "sfox":
-		return sfox.SFOX{Query: q}, nil
-	case "deribit":
-		// return deribit.Deribit{Query: q}
-		log.Fatalln("Deribit implementation incomplete. Only s. Please see ./adapters/_deribit/_deribit.go for function signatures/stubs")
-		return nil, nil
-	case "coinmarketcap":
-		// return coinmarketcap.CMC{Query: q}
-		log.Fatalln("CoinMarketCap implementation incomplete. Please see ./adapters/ for function signatures/stubs of how this would be implemented")
-		return nil, nil
-	default:
-		log.Fatalln("Unsupported vendor")
-
-		return nil, nil
-	}
 }
 
 func GenerateSnapshot(q adapters.Query, d adapters.OHLCVData) Snapshot {
