@@ -1,5 +1,9 @@
-# pairPeeker
+# basedQuotes
 Install
+  Add env files
+    Add `.env.local` in `/frontend`
+    Add `.env` in base directory
+
   Launch the NextJS app
     Navigate to `/frontend`
     Install dependencies
