@@ -5,12 +5,11 @@ import (
 	"io"
 )
 
-// interface
 type Venue interface {
 	Authenticate() error
 	ValidatePair() error
-	FetchOHLCV() (OHLCVData, error)               // Timestamp within method or at time of request?
-	FormatOHLCV(io.ReadCloser) (OHLCVData, error) // Last touch point
+	FetchOHLCV() (OHLCVData, error)
+	FormatOHLCV(io.ReadCloser) (OHLCVData, error)
 	FormattedCurrencyPair() string
 }
 
@@ -30,8 +29,6 @@ func (q Query) StartTime() int {
 }
 
 type OHLCVData struct {
-	// Define struct fields corresponding to the JSON data
-	// For example:
 	Open   string `json:"open_price"`
 	High   string `json:"high_price"`
 	Low    string `json:"low_price"`
